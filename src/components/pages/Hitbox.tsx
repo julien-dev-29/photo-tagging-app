@@ -7,8 +7,11 @@ type Props = {
 
 const StyledHitbox = styled.div<{ $character: Character }>`
   position: absolute;
-  top: ${(props) => props.$character.y[0] + "px"};
-  left: ${(props) => props.$character.x[0] + "px"};
+  top: ${(props) => props.$character.yMin + "px"};
+  left: ${(props) => props.$character.xMin + "px"};
+  &:hover {
+    cursor: pointer;
+  }
 `;
 
 export function Hitbox({ character }: Props) {

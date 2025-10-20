@@ -1,9 +1,12 @@
-export type Character = {
+export interface Character {
     id: string;
     name: string;
-    x: number[];
-    y: number[];
-};
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
+    found: boolean;
+}
 
 export type Position = {
     x: number;

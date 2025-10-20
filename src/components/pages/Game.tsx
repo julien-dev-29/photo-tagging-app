@@ -1,11 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Modal } from "../organisms/Modal";
 import type { Character } from "../../types/types";
-import { Hitbox } from "./Hitbox";
+import { Alert } from "../organisms/Alert";
+import styled from "styled-components";
+import Image from "../molecules/Image";
+
+const StyledContainer = styled.div`
+`;
 
 function Game() {
   const [characters, setCharacters] = useState<Character[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [alertType, setAlertType] = useState<string>("");
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({
@@ -25,36 +31,62 @@ function Game() {
         setIsLoading(false);
       }
     };
-    const handleClick = (e: MouseEvent) => {
-      setPosition({
-        x: e.clientX,
-        y: e.clientY,
-      });
-      setIsOpen((prev) => !prev);
-    };
-    window.addEventListener("click", handleClick);
     fetchCharacters();
-    return () => {
-      window.removeEventListener("click", handleClick);
-    };
   }, []);
+
+  const handleAnswer = async (e: FormEvent, characterId: string) => {
+    e.preventDefault();
+    setIsLoading(true);
+    try {
+      const res = await fetch("http://localhost:3000/check", {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+        body: JSON.stringify({
+          characterId: characterId,
+          x: position.x,
+          y: position.y,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setAlertType(data.message);
+      if (data.message === "Success!") {
+        setCharacters((prev) =>
+          prev.map((character) =>
+            character.id === characterId
+              ? { ...character, found: true }
+              : character
+          )
+        );
+      }
+      setIsLoading(false);
+    } catch (error) {
+      if (error instanceof Error) setError(error.message);
+      else setError(String(error));
+      setIsLoading(false);
+    }
+  };
 
   if (isLoading) return <div>Loading...</div>;
 
   if (error.length > 0) return <div>Alert</div>;
 
   return (
-    <div>
-      <h1>Game</h1>
-      {characters.map((character) => (
-        <Hitbox key={character.id} character={character}></Hitbox>
-      ))}
-      <Modal
-        isOpen={isOpen}
-        position={position}
-        characters={characters}
-      ></Modal>
-    </div>
+    <StyledContainer>
+      {alertType.length > 0 && (
+        <Alert alertType={alertType} setAlertType={setAlertType}></Alert>
+      )}
+      <Image setIsOpen={setIsOpen} setPosition={setPosition}>
+        <Modal
+          isOpen={isOpen}
+          position={position}
+          characters={characters}
+          handleAnswer={handleAnswer}
+        ></Modal>
+      </Image>
+    </StyledContainer>
   );
 }
 

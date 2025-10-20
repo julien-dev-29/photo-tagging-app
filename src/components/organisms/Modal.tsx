@@ -1,72 +1,66 @@
-import { useEffect, useState } from "react";
+import { useRef, type FormEvent } from "react";
 import styled from "styled-components";
 import type { Character, Position } from "../../types/types";
-import { Alert } from "./Alert";
+import { useCharacterSelect } from "../../hooks/useCharacterSelect";
 
 type Props = {
   isOpen: boolean;
   position: Position;
   characters: Character[];
+  handleAnswer: (e: FormEvent, characterId: string) => void;
 };
 
 const StyledModal = styled.div<{ $position: Position }>`
   position: absolute;
   top: ${(props) => props.$position.y + "px"};
   left: ${(props) => props.$position.x + "px"};
+  background: white;
+  padding: 10px;
+  border: 1px solid #ccc;
+  z-index: 1000;
 `;
 
-export function Modal({ isOpen, position, characters }: Props) {
-  const [characterId, setCharacterId] = useState<string>();
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string>("");
-  const [message, setMessage] = useState<string>("");
+export function Modal({ isOpen, position, characters, handleAnswer }: Props) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const { characterId, setCharacterId, hasAvailableCharacters } =
+    useCharacterSelect(characters);
 
-  useEffect(() => {
-    if (characters.length > 0) setCharacterId(characters[0].id);
-  }, [characters]);
-  const handleAnswer = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("http://localhost:3000/check", {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-          characterId: characterId,
-          x: position.x,
-          y: position.y,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setMessage(data.message);
-      setIsLoading(false);
-    } catch (error) {
-      if (error instanceof Error) setError(error.message);
-      else setError(String(error));
-      setIsLoading(false);
-    }
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!characterId) return;
+    handleAnswer(e, characterId);
   };
-  if (isOpen) return;
-  if (message.length > 0) return <Alert message={message}></Alert>;
+
+  if (!isOpen) return null;
+
   return (
-    <StyledModal onClick={(e) => e.stopPropagation()} $position={position}>
-      <form>
+    <StyledModal
+      ref={modalRef}
+      $position={position}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {characters
+        .filter((c) => c.found)
+        .map((c) => (
+          <div key={c.id}>{c.name}✅</div>
+        ))}
+      <form onSubmit={handleSubmit}>
         <select
           id="answer"
-          value={characterId}
+          value={characterId ?? ""}
           onChange={(e) => setCharacterId(e.target.value)}
+          disabled={!hasAvailableCharacters}
         >
-          {characters.map((character) => (
-            <option value={character.id} key={character.id}>
-              {character.name}
-            </option>
-          ))}
+          {characters
+            .filter((c) => !c.found)
+            .map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
         </select>
-        <button type="button" onClick={handleAnswer}>
-          Validate
-        </button>
+        <button type="submit">Valider</button>
       </form>
     </StyledModal>
   );
