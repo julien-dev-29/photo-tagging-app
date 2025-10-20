@@ -4,14 +4,23 @@ import type { Character } from "../../types/types";
 import { Alert } from "../organisms/Alert";
 import styled from "styled-components";
 import Image from "../molecules/Image";
+import { useOutletContext } from "react-router";
 
-const StyledContainer = styled.div`
-`;
+const StyledContainer = styled.div``;
 
 function Game() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [alertType, setAlertType] = useState<string>("");
+  const [characterLeft, setCharacterLeft, isFinished, setIsFinished] =
+    useOutletContext<
+      [
+        number,
+        React.Dispatch<React.SetStateAction<number>>,
+        boolean,
+        React.Dispatch<React.SetStateAction<boolean>>
+      ]
+    >();
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({
@@ -60,6 +69,10 @@ function Game() {
               : character
           )
         );
+        if (characterLeft === 1) {
+          setIsFinished(true);
+        }
+        setCharacterLeft((prev) => prev - 1);
       }
       setIsLoading(false);
     } catch (error) {

@@ -1,6 +1,8 @@
-import { Outlet } from "react-router";
-import Timer from "../components/organisms/Timer";
 import styled from "styled-components";
+import GameHeader from "../components/organisms/GameHeader";
+import { useState } from "react";
+import EndGame from "../components/pages/EndGame";
+import { Outlet } from "react-router";
 
 const StyledContainer = styled.div`
   height: 100vh;
@@ -12,10 +14,22 @@ const StyledContainer = styled.div`
 `;
 
 function GameLayout() {
+  const [characterLeft, setCharacterLeft] = useState<number>(5);
+  const [isFinished, setIsFinished] = useState<boolean>(false);
+  const [totalSeconds, setTotalSeconds] = useState(0);
+  if (isFinished) {
+    return <EndGame totalSeconds={totalSeconds} />;
+  }
   return (
     <StyledContainer>
-      <Timer />
-      <Outlet />
+      <GameHeader
+        characterLeft={characterLeft}
+        totalSeconds={totalSeconds}
+        setTotalSeconds={setTotalSeconds}
+      />
+      <Outlet
+        context={[characterLeft, setCharacterLeft, isFinished, setIsFinished]}
+      />
     </StyledContainer>
   );
 }
